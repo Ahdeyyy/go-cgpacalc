@@ -124,3 +124,11 @@ func (c CgpaRepo) GetCourse(code string) (Course, error) {
 	}
 	return course, nil
 }
+func (c CgpaRepo) DeleteCourse(code string) error {
+	stmt := `DELETE FROM courses WHERE code = ?`
+	_, err := c.Db.Exec(stmt, code)
+	if err != nil {
+		return err
+	}
+	return nil
+}
