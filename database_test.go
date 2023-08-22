@@ -6,11 +6,17 @@ import (
 	"testing"
 )
 
-var testDb CgpaRepo  = NewCgpaRepo("test.db")
+var testDb CgpaRepo  = NewCgpaRepo(":memory:")
 
 func TestAddAndGetCourse(t *testing.T) {
+	s := NewSemester("2021/22")
 	c := NewCourse("2021/22","physics", "phy101",4,'A')
-	testDb.AddCourse(c)
+	_ = testDb.AddSemester(s)
+	e := testDb.AddCourse(c)
+	
+	if e != nil {
+		t.Errorf("error: %s",e)
+	}
 	c2, err := testDb.GetCourse(c.Code)
 
 	if err != nil {
@@ -21,7 +27,11 @@ func TestAddAndGetCourse(t *testing.T) {
 		t.Errorf("expected :%v, got %v", c, c2)
 	}
 
-	testDb.DeleteCourse(c2.Code)
+	s,_ = testDb.GetSemester(s.Session)
+	t.Logf("%v",s)
+
+	testDb.DeleteCourse(c2)
+	testDb.DeleteSemester(s.Session)
 
 }
 
@@ -29,7 +39,7 @@ func TestDeleteCourse(t *testing.T) {
 
 	c := NewCourse("2021/22","physics", "phy101",4,'A')
 	testDb.AddCourse(c)
-	testDb.DeleteCourse(c.Code)
+	testDb.DeleteCourse(c)
 	c2, err := testDb.GetCourse(c.Code)
 	if err != nil && err != sql.ErrNoRows  {
 		t.Errorf("error %s", err)

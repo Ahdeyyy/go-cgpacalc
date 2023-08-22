@@ -1,12 +1,12 @@
 package main 
 
 type Semester struct {
-  Session string // i.e 2021/22
+  Session string // i.e 2021/22 First
   Gpa float32
 }
 
 type Course struct {
-	Session string // i.e 2021/22
+	Session string // i.e 2021/22 First
 	Name string
 	Code string 
 	Unit int

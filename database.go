@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"database/sql"
+
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -54,6 +55,11 @@ func OpenDb(path string) *sql.DB {
 			grade CHARACTER(1)
 		);
 	`)
+
+	if err != nil {
+		log.Panicln(err)
+	}
+
 
 	return db
 }
@@ -106,6 +112,39 @@ func (c CgpaRepo) AddCourse(course Course) error {
 		return err
 	}
 
+	rows, er := c.Db.Query(`
+		SELECT unit, grade
+		FROM courses 
+		WHERE session = ? ;`,course.Session )
+
+	if er != nil {
+		return er
+	}
+
+	defer rows.Close()
+
+	totalPoints := 0
+	totalUnits := 0
+
+	for rows.Next() {
+		var unit int
+		var grade byte
+		er = rows.Scan(&unit,&grade)
+		if er != nil {
+			return er
+		}
+		totalPoints += unit * GradeToPoint(grade)
+		totalUnits += unit
+	}
+
+	gpa := float32(totalPoints/totalUnits)
+
+	_, err = c.Db.Exec(`UPDATE semesters SET gpa = ? WHERE session = ?`, gpa, course.Session)
+
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -124,11 +163,64 @@ func (c CgpaRepo) GetCourse(code string) (Course, error) {
 	}
 	return course, nil
 }
-func (c CgpaRepo) DeleteCourse(code string) error {
+func (c CgpaRepo) DeleteCourse(course Course) error {
 	stmt := `DELETE FROM courses WHERE code = ?`
-	_, err := c.Db.Exec(stmt, code)
+	_, err := c.Db.Exec(stmt, course.Code)
+	if err != nil {
+		return err
+	
+	rows, er := c.Db.Query(`
+		SELECT unit, grade
+		FROM courses 
+		WHERE session = ? ;`,course.Session )
+
+	if er != nil {
+		return er
+	}
+
+	defer rows.Close()
+
+	totalPoints := 0
+	totalUnits := 0
+
+	for rows.Next() {
+		var unit int
+		var grade byte
+		er = rows.Scan(&unit,&grade)
+		if er != nil {
+			return er
+		}
+		totalPoints += unit * GradeToPoint(grade)
+		totalUnits += unit
+	}
+
+	gpa := float32(totalPoints/totalUnits)
+
+	_, err = c.Db.Exec(`UPDATE semesters SET gpa = ? WHERE session = ?`, gpa, course.Session)
+
 	if err != nil {
 		return err
 	}
+
+}
 	return nil
 }
+
+
+func GradeToPoint(grade byte) int {
+	switch grade {
+		case 'A', 'a':
+			return 5
+		case 'B', 'b':
+			return 4
+		case 'C','c' :
+			return 3
+		case 'D', 'd' :
+			return 2
+		case 'E', 'e': 
+			return 1
+		default: 
+			return 0
+	}
+}
+
