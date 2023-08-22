@@ -8,6 +8,20 @@ import (
 
 var testDb CgpaRepo  = NewCgpaRepo("test.db")
 
+func TestAddCourse(t *testing.T) {
+	c := NewCourse("2021/22","physics", "phy101",4,'A')
+	testDb.AddCourse(c)
+	c2, err := testDb.GetCourse(c.Code)
+
+	if err != nil {
+		t.Errorf("error: %s", err)
+	}
+
+	if !reflect.DeepEqual(c, c2) {
+		t.Errorf("expected :%v, got %v", c, c2)
+	}
+
+}
 
 func TestAddSemester(t *testing.T) {
 	s := NewSemester("2021/22")
@@ -39,6 +53,7 @@ func TestGetSemester(t *testing.T) {
 	testDb.DeleteSemester(s.Session)
 
 }
+
 func TestDeleteSemester(t *testing.T) {
 	s := NewSemester("2019/20")
 	testDb.AddSemester(s)

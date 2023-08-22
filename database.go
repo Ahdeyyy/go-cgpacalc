@@ -45,6 +45,16 @@ func OpenDb(path string) *sql.DB {
 		log.Panicln(err)
 	}
 
+	_, err = db.Exec(`
+		CREATE TABLE IF NOT EXISTS courses (
+			session TEXT,
+			name TEXT,
+			code TEXT UNIQUE,
+			unit INT,
+			grade CHARACTER(1)
+		);
+	`)
+
 	return db
 }
 
@@ -84,4 +94,33 @@ func (c CgpaRepo) DeleteSemester(session string) error {
 		return err
 	}
 	return nil
+}
+
+func (c CgpaRepo) AddCourse(course Course) error {
+	stmt := `
+		INSERT INTO courses ( session, name, code, unit, grade) VALUES (?, ?, ?, ?, ?)
+	`
+	_, err := c.Db.Exec(stmt, course.Session, course.Name, course.Code, course.Unit, course.Grade)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c CgpaRepo) GetCourse(code string) (Course, error) {
+	stmt := `
+		SELECT * FROM courses WHERE code = ? 
+		`
+	var course Course
+
+	result := c.Db.QueryRow(stmt, code)
+
+	err := result.Scan(&course.Session, &course.Name, &course.Code, &course.Unit, &course.Grade)
+
+	if err != nil {
+		return course, err
+	}
+	return course, nil
 }
