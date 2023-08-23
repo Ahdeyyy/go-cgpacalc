@@ -8,9 +8,61 @@ import (
 
 var testDb CgpaRepo  = NewCgpaRepo(":memory:")
 
-func TestAddAndGetCourse(t *testing.T) {
+func TestGetCourses(t *testing.T) {
+	
 	s := NewSemester("2021/22")
 	c := NewCourse("2021/22","physics", "phy101",4,'A')
+	c1 := NewCourse("2021/22","algebra", "mat101",4,'A')
+	c2 := NewCourse("2021/22","calculus", "mat102",4,'A')
+	c3 := NewCourse("2021/22","intro to programming", "csc101",4,'A')
+	e := testDb.AddSemester(s)
+
+	if e != nil {
+		t.Errorf("error: %s",e)
+	}
+
+	e = testDb.AddCourse(c)
+
+	if e != nil {
+		t.Errorf("error: %s",e)
+	}
+	
+	e = testDb.AddCourse(c1)
+
+	if e != nil {
+		t.Errorf("error: %s",e)
+	}
+	e = testDb.AddCourse(c2)
+
+	if e != nil {
+		t.Errorf("error: %s",e)
+	}
+	e = testDb.AddCourse(c3)
+
+	if e != nil {
+		t.Errorf("error: %s",e)
+	}
+
+
+	var courses []Course
+	courses = append(courses, c, c1, c2, c3)
+
+	courses2, err := testDb.GetCourses(s)
+
+	if err != nil {
+		t.Errorf("error: %s",e)
+	}
+
+	if !reflect.DeepEqual(courses, courses2) {
+		t.Errorf("error: expected %v, got %v", courses, courses2)
+	}
+	testDb.DeleteSemester(s.Session)
+
+}
+
+func TestAddAndGetCourse(t *testing.T) {
+	s := NewSemester("2021/22")
+	c := NewCourse("2021/22","physics", "phy106",4,'A')
 	_ = testDb.AddSemester(s)
 	e := testDb.AddCourse(c)
 	
@@ -37,7 +89,7 @@ func TestAddAndGetCourse(t *testing.T) {
 
 func TestDeleteCourse(t *testing.T) {
 
-	c := NewCourse("2021/22","physics", "phy101",4,'A')
+	c := NewCourse("2021/22","physics", "phy108",4,'A')
 	testDb.AddCourse(c)
 	testDb.DeleteCourse(c)
 	c2, err := testDb.GetCourse(c.Code)

@@ -206,6 +206,38 @@ func (c CgpaRepo) DeleteCourse(course Course) error {
 	return nil
 }
 
+func (c CgpaRepo)GetCourses(semester Semester) ([]Course,error) {
+	var courses []Course
+	stmt :=	`SELECT * FROM courses WHERE session = ? `
+	res, err := c.Db.Query(stmt,semester.Session)
+	if err != nil {
+		return courses, err
+	}
+	defer res.Close()
+
+	for res.Next() {
+		cour := Course{}
+		err = res.Scan(&cour.Session, &cour.Name,&cour.Code, &cour.Unit,&cour.Grade)
+		if err != nil {
+			continue
+		}
+		courses = append(courses, cour)
+	}
+
+	return courses,nil
+
+}
+
+func (c CgpaRepo)GetCgpa() (float32,error) {
+	stmt := `SELECT SUM(gpa) / COUNT(*) AS CGPA FROM semesters`
+	var cgpa float32
+	err := c.Db.QueryRow(stmt).Scan(&cgpa)
+	if err != nil {
+		return 0.0, err
+	}
+	return cgpa, nil
+}
+
 
 func GradeToPoint(grade byte) int {
 	switch grade {
