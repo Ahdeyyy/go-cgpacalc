@@ -1,7 +1,9 @@
 package main
 
 import (
-
-	_ "github.com/mattn/go-sqlite3"
+	"cgpa-calc/cmd/cgpa"
 )
 
+func main() {
+	cgpa.Execute()
+}

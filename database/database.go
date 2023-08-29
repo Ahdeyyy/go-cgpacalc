@@ -1,4 +1,4 @@
-package main
+package database
 
 import (
 	"log"
@@ -205,6 +205,29 @@ func (c CgpaRepo) DeleteCourse(course Course) error {
 }
 	return nil
 }
+
+func (c CgpaRepo) GetSemesters() ([]Semester, error) {
+	var semesters []Semester 
+	stmt := "SELECT * FROM semesters"
+	res, err := c.Db.Query(stmt)
+	if err != nil {
+		return semesters, err
+	}
+	defer res.Close()
+	for res.Next() {
+		sem := Semester{}
+		err = res.Scan(&sem.Session,&sem.Gpa)
+		if err != nil {
+			continue
+		}
+		semesters =	append(semesters,sem)
+	}
+
+	return semesters, nil 
+}
+
+
+
 
 func (c CgpaRepo)GetCourses(semester Semester) ([]Course,error) {
 	var courses []Course
