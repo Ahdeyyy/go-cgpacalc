@@ -29,6 +29,19 @@ type Course struct {
 	Grade   byte
 }
 
+func (c Course) Title() string {
+	return c.Name
+}
+
+func (c Course) Description() string {
+	return "Code: " + c.Code + " Unit: " + strconv.Itoa(c.Unit) + " Grade: " + string(c.Grade)
+}
+
+func (c Course) FilterValue() string {
+	return c.Code
+}
+
+
 func NewCourse(Session string, Name string, Code string, Unit int, Grade byte) Course {
 	return Course{
 		Session: Session,

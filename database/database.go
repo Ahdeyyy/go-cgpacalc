@@ -60,7 +60,6 @@ func OpenDb(path string) *sql.DB {
 		log.Panicln(err)
 	}
 
-
 	return db
 }
 
@@ -115,7 +114,7 @@ func (c CgpaRepo) AddCourse(course Course) error {
 	rows, er := c.Db.Query(`
 		SELECT unit, grade
 		FROM courses 
-		WHERE session = ? ;`,course.Session )
+		WHERE session = ? ;`, course.Session)
 
 	if er != nil {
 		return er
@@ -125,11 +124,12 @@ func (c CgpaRepo) AddCourse(course Course) error {
 
 	totalPoints := 0
 	totalUnits := 0
+	gpa := float32(0.0)
 
 	for rows.Next() {
 		var unit int
 		var grade byte
-		er = rows.Scan(&unit,&grade)
+		er = rows.Scan(&unit, &grade)
 		if er != nil {
 			return er
 		}
@@ -137,7 +137,9 @@ func (c CgpaRepo) AddCourse(course Course) error {
 		totalUnits += unit
 	}
 
-	gpa := float32(totalPoints/totalUnits)
+	if totalUnits != 0 {
+		gpa = float32(totalPoints / totalUnits)
+	}
 
 	_, err = c.Db.Exec(`UPDATE semesters SET gpa = ? WHERE session = ?`, gpa, course.Session)
 
@@ -168,11 +170,11 @@ func (c CgpaRepo) DeleteCourse(course Course) error {
 	_, err := c.Db.Exec(stmt, course.Code)
 	if err != nil {
 		return err
-	
+	}
 	rows, er := c.Db.Query(`
 		SELECT unit, grade
 		FROM courses 
-		WHERE session = ? ;`,course.Session )
+		WHERE session = ? ;`, course.Session)
 
 	if er != nil {
 		return er
@@ -182,11 +184,12 @@ func (c CgpaRepo) DeleteCourse(course Course) error {
 
 	totalPoints := 0
 	totalUnits := 0
+	gpa := float32(0.0)
 
 	for rows.Next() {
 		var unit int
 		var grade byte
-		er = rows.Scan(&unit,&grade)
+		er = rows.Scan(&unit, &grade)
 		if er != nil {
 			return er
 		}
@@ -194,7 +197,9 @@ func (c CgpaRepo) DeleteCourse(course Course) error {
 		totalUnits += unit
 	}
 
-	gpa := float32(totalPoints/totalUnits)
+	if totalUnits != 0 {
+		gpa = float32(totalPoints / totalUnits)
+	}
 
 	_, err = c.Db.Exec(`UPDATE semesters SET gpa = ? WHERE session = ?`, gpa, course.Session)
 
@@ -202,12 +207,11 @@ func (c CgpaRepo) DeleteCourse(course Course) error {
 		return err
 	}
 
-}
 	return nil
 }
 
 func (c CgpaRepo) GetSemesters() ([]Semester, error) {
-	var semesters []Semester 
+	var semesters []Semester
 	stmt := "SELECT * FROM semesters"
 	res, err := c.Db.Query(stmt)
 	if err != nil {
@@ -216,23 +220,20 @@ func (c CgpaRepo) GetSemesters() ([]Semester, error) {
 	defer res.Close()
 	for res.Next() {
 		sem := Semester{}
-		err = res.Scan(&sem.Session,&sem.Gpa)
+		err = res.Scan(&sem.Session, &sem.Gpa)
 		if err != nil {
 			continue
 		}
-		semesters =	append(semesters,sem)
+		semesters = append(semesters, sem)
 	}
 
-	return semesters, nil 
+	return semesters, nil
 }
 
-
-
-
-func (c CgpaRepo)GetCourses(semester Semester) ([]Course,error) {
+func (c CgpaRepo) GetCourses(semester Semester) ([]Course, error) {
 	var courses []Course
-	stmt :=	`SELECT * FROM courses WHERE session = ? `
-	res, err := c.Db.Query(stmt,semester.Session)
+	stmt := `SELECT * FROM courses WHERE session = ? `
+	res, err := c.Db.Query(stmt, semester.Session)
 	if err != nil {
 		return courses, err
 	}
@@ -240,18 +241,39 @@ func (c CgpaRepo)GetCourses(semester Semester) ([]Course,error) {
 
 	for res.Next() {
 		cour := Course{}
-		err = res.Scan(&cour.Session, &cour.Name,&cour.Code, &cour.Unit,&cour.Grade)
+		err = res.Scan(&cour.Session, &cour.Name, &cour.Code, &cour.Unit, &cour.Grade)
 		if err != nil {
 			continue
 		}
 		courses = append(courses, cour)
 	}
 
-	return courses,nil
+	return courses, nil
 
 }
 
-func (c CgpaRepo)GetCgpa() (float32,error) {
+func (c CgpaRepo) GetAllCourses() ([]Course, error) {
+	var courses []Course
+	stmt := `SELECT * FROM courses`
+	res, err := c.Db.Query(stmt)
+	if err != nil {
+		return courses, err
+	}
+	defer res.Close()
+
+	for res.Next() {
+		cour := Course{}
+		err = res.Scan(&cour.Session, &cour.Name, &cour.Code, &cour.Unit, &cour.Grade)
+		if err != nil {
+			continue
+		}
+		courses = append(courses, cour)
+	}
+
+	return courses, nil
+}
+
+func (c CgpaRepo) GetCgpa() (float32, error) {
 	stmt := `SELECT SUM(gpa) / COUNT(*) AS CGPA FROM semesters`
 	var cgpa float32
 	err := c.Db.QueryRow(stmt).Scan(&cgpa)
@@ -261,21 +283,19 @@ func (c CgpaRepo)GetCgpa() (float32,error) {
 	return cgpa, nil
 }
 
-
 func GradeToPoint(grade byte) int {
 	switch grade {
-		case 'A', 'a':
-			return 5
-		case 'B', 'b':
-			return 4
-		case 'C','c' :
-			return 3
-		case 'D', 'd' :
-			return 2
-		case 'E', 'e': 
-			return 1
-		default: 
-			return 0
+	case 'A', 'a':
+		return 5
+	case 'B', 'b':
+		return 4
+	case 'C', 'c':
+		return 3
+	case 'D', 'd':
+		return 2
+	case 'E', 'e':
+		return 1
+	default:
+		return 0
 	}
 }
-
